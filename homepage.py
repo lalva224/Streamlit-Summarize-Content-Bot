@@ -8,7 +8,8 @@ from lib.pinecone import perform_rag
 st.title("Multimodal context answer engine")
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm your AI Context Engine. Please select your context and I'll gladly answer your questions!"}]
+
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -25,3 +26,6 @@ if prompt:
         response = perform_rag(prompt)
         st.markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
+
+
+

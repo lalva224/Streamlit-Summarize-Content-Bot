@@ -5,6 +5,8 @@ import torch
 from pinecone import Pinecone
 from groq import Groq
 from openai import OpenAI
+import requests
+import re
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 pinecone = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
@@ -16,6 +18,17 @@ client = Groq(
 
 def perform_rag(query):
     context = ""
+    websites = extract_urls(query)
+    #if user provides websites in query, those websites are scraped, before getting embedded.
+    if websites:
+        website_data = ""
+        for website in websites:
+            website_data += f"## {website}\n"
+            website_data += scrape_page(website)
+            website_data += "\n\n"
+        #new query is not scraped data + old query (links and non url text)
+        query = website_data + "\n\n" + query
+        print(query)
     if 'selected_namespace' in st.session_state:
         namespace = st.session_state['selected_namespace']
         embeddings = get_text_embeddings(query)
@@ -28,7 +41,9 @@ def perform_rag(query):
         
         )
         matches = [match['metadata']['document_content'] for match in result['matches']]
+        print(matches)
         context = '\n'.join(matches)
+        print(context)
     else:
         print("No namespace selected")
     system_prompt = f"""
@@ -48,6 +63,18 @@ Context: {context}
     response = chat_completion.choices[0].message.content
     return response
     
+def scrape_page(website_url):
+    headers = {
+        'Authorization': 'Bearer ' + st.secrets["JINA_API_KEY"]
+    }
+    URL = f'https://r.jina.ai/https://{website_url}'
+    response = requests.get(URL, headers=headers)
+    return response.text
+
+def extract_urls(query):
+    url_pattern = r'(https?://[^\s]+)'
+    websites = re.findall(url_pattern, query)
+    return websites
 
 def upsert_context_pinecone(file,file_name):
     document_data = load_file(file,file_name)
