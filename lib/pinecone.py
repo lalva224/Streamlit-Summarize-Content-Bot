@@ -18,17 +18,6 @@ client = Groq(
 
 def perform_rag(query):
     context = ""
-    websites = extract_urls(query)
-    #if user provides websites in query, those websites are scraped, before getting embedded.
-    if websites:
-        website_data = ""
-        for website in websites:
-            website_data += f"## {website}\n"
-            website_data += scrape_page(website)
-            website_data += "\n\n"
-        #new query is not scraped data + old query (links and non url text)
-        query = website_data + "\n\n" + query
-        print(query)
     if 'selected_namespace' in st.session_state:
         namespace = st.session_state['selected_namespace']
         embeddings = get_text_embeddings(query)
